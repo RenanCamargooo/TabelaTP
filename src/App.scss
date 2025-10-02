@@ -1,18 +1,34 @@
-.App {
-  text-align: center;
+.app-container {
+max-width: 980px;
+margin: 24px auto;
+background: #fff;
+padding: 20px;
+border-radius: 8px;
+box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
 }
 
 
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+h1 { margin: 0 0 12px 0; font-size: 1.4rem; }
 
 
+.group { margin-bottom: 18px; border: 1px solid #eee; padding: 12px; border-radius: 6px; }
+.group h2 { margin: 0 0 8px 0; font-size: 1rem; }
+
+
+.input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.label-name { width: 160px; font-weight: 500; }
+.input-row input { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; text-align: right; }
+
+
+.group-total { margin-top: 8px; }
+.total-geral { font-size: 1.15rem; }
+
+
+.footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.actions button { margin-left: 8px; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; color: white; }
+.actions button:first-child { background: #e53935; }
+.actions button:last-child { background: #1976d2; }
+
+
+hr { margin: 18px 0; border: none; border-top: 1px solid #eee; }
