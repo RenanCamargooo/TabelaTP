@@ -1,43 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import './App.scss';
 
-// --- Lista de vendedores por grupo ---
 const vendedoresPorGrupo = {
   'TELEVENDAS HOST': ['Renan', 'Cleydiano', 'Osvaldo', 'Mayara'],
   'WPP VENDAS P.D': ['Maria', 'Valéria', 'Andressa'],
   'WPP VENDAS HOST': ['Victor', 'Hudson']
 };
 
-// --- Formatação em Real (R$) ---
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL'
 });
 
-// --- Função para converter texto em número ---
 function parseNumber(value) {
-  if (value === null || value === undefined) return 0;
-  const s = String(value).trim();
-  if (s === '') return 0;
-
-  let normalized = s.replace(/\s/g, '').replace(/R\$/g, '');
-  if (normalized.indexOf('.') > -1 && normalized.indexOf(',') > -1) {
-    normalized = normalized.replace(/\./g, '');
-    normalized = normalized.replace(/,/g, '.');
+  if (!value) return 0;
+  let s = String(value).trim();
+  s = s.replace(/[^0-9.,-]/g, '');
+  if (s.includes('.') && s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
   } else {
-    normalized = normalized.replace(/,/g, '.');
+    s = s.replace(',', '.');
   }
-  normalized = normalized.replace(/[^0-9.-]/g, '');
-  const n = parseFloat(normalized);
+  const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
 
-// --- Componente principal ---
 export default function App() {
   const allNames = Object.values(vendedoresPorGrupo).flat();
-  const initialState = allNames.reduce((acc, name) => ({ ...acc, [name]: '' }), {});
+  const initialState = allNames.reduce(
+    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '' } }),
+    {}
+  );
 
-  // Estado inicial: carrega do localStorage se existir
   const [valores, setValores] = useState(() => {
     try {
       const raw = localStorage.getItem('vendasDia');
@@ -49,19 +43,20 @@ export default function App() {
     return initialState;
   });
 
-  // Salvar sempre que mudar
   useEffect(() => {
     localStorage.setItem('vendasDia', JSON.stringify(valores));
   }, [valores]);
 
-  // Atualizar valor digitado
-  function handleChange(name, rawValue) {
-    setValores(prev => ({ ...prev, [name]: rawValue }));
+  function handleChange(name, field, rawValue) {
+    setValores(prev => ({ ...prev, [name]: { ...prev[name], [field]: rawValue } }));
   }
 
-  // Calcular total por grupo
   function calcGroupTotal(nomes) {
-    return nomes.reduce((sum, nome) => sum + parseNumber(valores[nome]), 0);
+    return nomes.reduce((sum, nome) => {
+      const dia = parseNumber(valores[nome].dia);
+      const anual = parseNumber(valores[nome].anual);
+      return sum + dia + (anual ? anual / 12 : 0);
+    }, 0);
   }
 
   const groupTotals = Object.fromEntries(
@@ -70,16 +65,19 @@ export default function App() {
 
   const totalGeral = Object.values(groupTotals).reduce((a, b) => a + b, 0);
 
-  // Zerar todos os campos
   function handleReset() {
     setValores(initialState);
     localStorage.removeItem('vendasDia');
   }
 
-  // Exportar para CSV
   function exportCSV() {
-    const header = ['Vendedor', 'Valor'];
-    const rows = allNames.map(name => [name, parseNumber(valores[name]).toFixed(2)]);
+    const header = ['Vendedor', 'Dia', 'Anual', 'Total Mensalizado'];
+    const rows = allNames.map(name => {
+      const dia = parseNumber(valores[name].dia);
+      const anual = parseNumber(valores[name].anual);
+      const mensalizado = dia + (anual ? anual / 12 : 0);
+      return [name, dia.toFixed(2), anual.toFixed(2), mensalizado.toFixed(2)];
+    });
     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -90,40 +88,61 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  // --- Renderização ---
   return (
     <div className="app-container">
-      <h1>Calculadora de Vendas — Dia</h1>
+      <h1>Calculadora de Vendas — Dia / Anual</h1>
 
       <div className="groups">
-        {Object.entries(vendedoresPorGrupo).map(([grupo, nomes]) => (
-          <section key={grupo} className="group">
-            <h2>{grupo}</h2>
-            <div className="group-body">
-              {nomes.map(nome => (
-                <label className="input-row" key={nome}>
-                  <span className="label-name">{nome}</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={valores[nome]}
-                    onChange={e => handleChange(nome, e.target.value)}
-                    onBlur={e => {
-                      const n = parseNumber(e.target.value);
-                      const formatted = n === 0 ? '' : n.toFixed(2).replace('.', ',');
-                      setValores(prev => ({ ...prev, [nome]: formatted }));
-                    }}
-                  />
-                </label>
-              ))}
-            </div>
+        {Object.entries(vendedoresPorGrupo).map(([grupo, nomes]) => {
+          const totalMensal = groupTotals[grupo];
 
-            <div className="group-total">
-              Total {grupo}: <strong>{currencyFormatter.format(groupTotals[grupo])}</strong>
-            </div>
-          </section>
-        ))}
+          return (
+            <section key={grupo} className="group">
+              <h2>
+                {grupo} <span className="subtitle">Vendas Anual</span>
+              </h2>
+              <div className="group-body">
+                {nomes.map(nome => (
+                  <div key={nome} className="input-row">
+                    <span className="label-name">{nome}</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Venda do Dia"
+                      value={valores[nome].dia}
+                      onChange={e => handleChange(nome, 'dia', e.target.value)}
+                      onBlur={e => {
+                        const n = parseNumber(e.target.value);
+                        setValores(prev => ({
+                          ...prev,
+                          [nome]: { ...prev[nome], dia: n ? n.toFixed(2).replace('.', ',') : '' }
+                        }));
+                      }}
+                    />
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Venda Anual"
+                      value={valores[nome].anual}
+                      onChange={e => handleChange(nome, 'anual', e.target.value)}
+                      onBlur={e => {
+                        const n = parseNumber(e.target.value);
+                        setValores(prev => ({
+                          ...prev,
+                          [nome]: { ...prev[nome], anual: n ? n.toFixed(2).replace('.', ',') : '' }
+                        }));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="group-total">
+                Total {grupo}: <strong>{currencyFormatter.format(totalMensal)}</strong>
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       <hr />
