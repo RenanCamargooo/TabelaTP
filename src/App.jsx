@@ -108,7 +108,7 @@ export default function App() {
                     <input
                       type="text"
                       inputMode="decimal"
-                      placeholder="Venda do Dia"
+                      placeholder="Venda Mensal" // Alterado
                       value={valores[nome].dia}
                       onChange={e => handleChange(nome, 'dia', e.target.value)}
                       onBlur={e => {
