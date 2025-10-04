@@ -88,7 +88,7 @@ export default function App() {
       const qtd = parseNumber(valores[name].qtd);
       const mensalizado = dia + (anual ? anual / 12 : 0);
       return [
-        valores[name].operador,
+        valores[name].operador || 'Operador',
         dia.toFixed(2),
         anual.toFixed(2),
         qtd,
@@ -124,7 +124,6 @@ export default function App() {
   }
 
   const addOperator = grupo => {
-    // Gera uma chave única para o estado, mas o input exibirá sempre "Operador"
     const uniqueKey = `operador_${Date.now()}`;
 
     setVendedoresPorGrupo(prev => {
@@ -136,7 +135,7 @@ export default function App() {
     setValores(prev => {
       const updatedValores = {
         ...prev,
-        [uniqueKey]: { dia: '', anual: '', qtd: '', operador: 'Operador', anim: 'new' }
+        [uniqueKey]: { dia: '', anual: '', qtd: '', operador: '', anim: 'new' }
       };
       localStorage.setItem('vendasDia', JSON.stringify(updatedValores));
       return updatedValores;
@@ -195,7 +194,7 @@ export default function App() {
                     <input
                       type="text"
                       placeholder="Operador"
-                      value={valores[nome]?.operador || 'Operador'}
+                      value={valores[nome]?.operador}
                       onChange={e => handleChange(nome, 'operador', e.target.value)}
                     />
                     <input
