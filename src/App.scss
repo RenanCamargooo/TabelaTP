@@ -4,21 +4,25 @@ body {
   padding: 0;
   min-height: 100vh;
 
-  /* Gradiente rosa claro para rosa escuro animado */
+  /* Gradiente rosa escuro animado */
   background: linear-gradient(
     135deg,
-    rgba(255, 182, 193, 0.85),  /* rosa claro */
-    rgba(219, 112, 147, 0.85),  /* rosa médio */
-    rgba(199, 21, 133, 0.8),    /* rosa escuro */
-    rgba(255, 192, 203, 0.9)    /* volta ao rosa claro */
+    rgba(120, 0, 60, 0.95),    /* rosa muito escuro */
+    rgba(180, 20, 80, 0.9),    /* rosa médio */
+    rgba(220, 100, 140, 0.85), /* rosa claro */
+    rgba(160, 0, 70, 0.95)     /* rosa escuro intercalado */
   );
-  background-size: 400% 400%;
-  animation: gradientMove 12s ease infinite;
+  background-size: 1200% 1200%;
+  animation: gradientMove 30s ease infinite;
 }
 
+/* Animação suave e dinâmica */
 @keyframes gradientMove {
   0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  20% { background-position: 25% 75%; }
+  40% { background-position: 50% 25%; }
+  60% { background-position: 75% 75%; }
+  80% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
@@ -106,6 +110,9 @@ h1 {
   }
 
   input {
+    color: #3b0050; /* roxo intenso, mais visível */
+    font-weight: 700; /* letras fortes */
+    
     &.qtd {
       flex: 0 0 50px;
       padding: 4px 6px; 
@@ -120,19 +127,19 @@ h1 {
         transform: scale(1.05);
         border-color: #7b1fa2;
         background: #fce4ec;
-        box-shadow: 0 0 15px rgba(155,39,176,0.4);
+        box-shadow: 0 0 18px rgba(155,39,176,0.5);
       }
 
       &:focus {
         outline: none;
         border-color: #7b1fa2;
         background: #fff;
-        box-shadow: 0 0 15px rgba(155,39,176,0.4);
+        box-shadow: 0 0 18px rgba(155,39,176,0.5);
       }
 
       &::placeholder {
-        color: #9c27b0;
-        opacity: 0.8;
+        color: #6a0080; /* placeholder mais escuro e legível */
+        opacity: 0.95;
       }
     }
 
@@ -150,19 +157,19 @@ h1 {
         transform: scale(1.05);
         border-color: #7b1fa2;
         background: #fce4ec;
-        box-shadow: 0 0 15px rgba(155,39,176,0.4);
+        box-shadow: 0 0 18px rgba(155,39,176,0.5);
       }
 
       &:focus {
         outline: none;
         border-color: #7b1fa2;
         background: #fff;
-        box-shadow: 0 0 15px rgba(155,39,176,0.4);
+        box-shadow: 0 0 18px rgba(155,39,176,0.5);
       }
 
       &::placeholder {
-        color: #9c27b0;
-        opacity: 0.8;
+        color: #6a0080;
+        opacity: 0.95;
       }
     }
   }

@@ -3,25 +3,25 @@ html, body, #root {
   margin: 0;
 }
 
-/* Fundo animado degradê rosa escuro, médio e claro */
+/* Fundo animado degradê rosa escuro, bordô e vinho */
 body {
   background: linear-gradient(
     135deg,
-    rgba(120, 0, 60, 0.9),    /* rosa muito escuro */
-    rgba(180, 20, 80, 0.85),  /* rosa médio */
-    rgba(220, 100, 140, 0.8), /* rosa claro */
-    rgba(160, 0, 70, 0.9)     /* rosa escuro intercalado */
+    rgba(80, 0, 40, 0.95),    /* rosa profundo / quase vinho */
+    rgba(120, 10, 50, 0.9),   /* bordô escuro */
+    rgba(160, 20, 70, 0.85),  /* rosa escuro aconchegante */
+    rgba(100, 0, 50, 0.9)     /* vinho escuro intercalado */
   );
-  background-size: 1200% 1200%; /* aumenta percepção de movimento */
-  animation: gradientMove 30s ease infinite;
+  background-size: 1500% 1500%; /* mais percepção de movimento */
+  animation: gradientMove 35s ease infinite; /* mais lento e suave */
 }
 
-/* Animação suave e intuitiva */
+/* Animação suave e agradável aos olhos */
 @keyframes gradientMove {
   0% { background-position: 0% 50%; }
-  20% { background-position: 25% 75%; }
-  40% { background-position: 50% 25%; }
-  60% { background-position: 75% 75%; }
+  20% { background-position: 30% 70%; }
+  40% { background-position: 60% 30%; }
+  60% { background-position: 80% 70%; }
   80% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
