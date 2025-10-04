@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.scss';
 
-const vendedoresPorGrupo = {
+const defaultGrupos = {
   'TELEVENDAS HOST': ['Renan', 'Cleydiano', 'Osvaldo', 'Mayara'],
   'WPP VENDAS P.D': ['Maria', 'Valéria', 'Andressa'],
   'WPP VENDAS HOST': ['Victor', 'Hudson']
@@ -26,9 +26,11 @@ function parseNumber(value) {
 }
 
 export default function App() {
+  const [vendedoresPorGrupo, setVendedoresPorGrupo] = useState(defaultGrupos);
+
   const allNames = Object.values(vendedoresPorGrupo).flat();
   const initialState = allNames.reduce(
-    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '' } }),
+    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '', qtd: '', operador: name } }),
     {}
   );
 
@@ -71,12 +73,13 @@ export default function App() {
   }
 
   function exportCSV() {
-    const header = ['Vendedor', 'Dia', 'Anual', 'Total Mensalizado'];
+    const header = ['Operador', 'Dia', 'Anual', 'Qtd Produtos', 'Total Mensalizado'];
     const rows = allNames.map(name => {
       const dia = parseNumber(valores[name].dia);
       const anual = parseNumber(valores[name].anual);
+      const qtd = parseNumber(valores[name].qtd);
       const mensalizado = dia + (anual ? anual / 12 : 0);
-      return [name, dia.toFixed(2), anual.toFixed(2), mensalizado.toFixed(2)];
+      return [valores[name].operador, dia.toFixed(2), anual.toFixed(2), qtd, mensalizado.toFixed(2)];
     });
     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -86,11 +89,40 @@ export default function App() {
     a.download = `vendas_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    alert('✅ Resultados baixados! Confira o CSV.');
   }
+
+  const addOperator = grupo => {
+    const newName = `Operador`;
+    let count = 1;
+    while (Object.keys(valores).includes(newName + (count > 1 ? ` ${count}` : ''))) count++;
+    const finalName = newName + (count > 1 ? ` ${count}` : '');
+    
+    setVendedoresPorGrupo(prev => ({
+      ...prev,
+      [grupo]: [...prev[grupo], finalName]
+    }));
+    setValores(prev => ({ ...prev, [finalName]: { dia: '', anual: '', qtd: '', operador: 'Operador' } }));
+  };
+
+  const removeOperator = grupo => {
+    const nomes = vendedoresPorGrupo[grupo];
+    if (nomes.length === 0) return;
+    const nameToRemove = nomes[nomes.length - 1];
+    setVendedoresPorGrupo(prev => ({
+      ...prev,
+      [grupo]: prev[grupo].slice(0, -1)
+    }));
+    setValores(prev => {
+      const copy = { ...prev };
+      delete copy[nameToRemove];
+      return copy;
+    });
+  };
 
   return (
     <div className="app-container">
-      <h1>Calculadora de Vendas — Dia / Anual</h1>
+      <h1>Calculadora de Vendas — Dia / Anual / Produtos</h1>
 
       <div className="groups">
         {Object.entries(vendedoresPorGrupo).map(([grupo, nomes]) => {
@@ -99,25 +131,24 @@ export default function App() {
           return (
             <section key={grupo} className="group">
               <h2>
-                {grupo} <span className="subtitle">Vendas Anual</span>
+                {grupo} <span className="subtitle">Vendas Anuais</span>
               </h2>
+
               <div className="group-body">
                 {nomes.map(nome => (
                   <div key={nome} className="input-row">
-                    <span className="label-name">{nome}</span>
+                    <input
+                      type="text"
+                      placeholder="Operador"
+                      value={valores[nome].operador}
+                      onChange={e => handleChange(nome, 'operador', e.target.value)}
+                    />
                     <input
                       type="text"
                       inputMode="decimal"
-                      placeholder="Venda Mensal" // Alterado
+                      placeholder="Venda Mensal"
                       value={valores[nome].dia}
                       onChange={e => handleChange(nome, 'dia', e.target.value)}
-                      onBlur={e => {
-                        const n = parseNumber(e.target.value);
-                        setValores(prev => ({
-                          ...prev,
-                          [nome]: { ...prev[nome], dia: n ? n.toFixed(2).replace('.', ',') : '' }
-                        }));
-                      }}
                     />
                     <input
                       type="text"
@@ -125,16 +156,20 @@ export default function App() {
                       placeholder="Venda Anual"
                       value={valores[nome].anual}
                       onChange={e => handleChange(nome, 'anual', e.target.value)}
-                      onBlur={e => {
-                        const n = parseNumber(e.target.value);
-                        setValores(prev => ({
-                          ...prev,
-                          [nome]: { ...prev[nome], anual: n ? n.toFixed(2).replace('.', ',') : '' }
-                        }));
-                      }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Qtd Produtos"
+                      value={valores[nome].qtd}
+                      onChange={e => handleChange(nome, 'qtd', e.target.value)}
                     />
                   </div>
                 ))}
+              </div>
+
+              <div className="group-actions">
+                <button className="add-btn" onClick={() => addOperator(grupo)}>➕ Adicionar Operador</button>
+                <button className="remove-btn" onClick={() => removeOperator(grupo)}>❌ Remover Operador</button>
               </div>
 
               <div className="group-total">
@@ -154,7 +189,7 @@ export default function App() {
 
         <div className="actions">
           <button type="button" onClick={handleReset}>Zerar</button>
-          <button type="button" onClick={exportCSV}>Exportar CSV</button>
+          <button type="button" onClick={exportCSV}>Baixar resultados</button>
         </div>
       </div>
     </div>
