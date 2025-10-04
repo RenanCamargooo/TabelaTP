@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.scss';
 
 const defaultGrupos = {
-  'TELEVENDAS HOST': ['Renan', 'Cleydiano', 'Osvaldo', 'Mayara'],
+  'TELEVENDAS HOST': ['Renan', 'Cleydiano', 'Osvaldo', 'Mayra'],
   'WPP VENDAS P.D': ['Maria', 'Valéria', 'Andressa'],
   'WPP VENDAS HOST': ['Victor', 'Hudson']
 };
@@ -26,28 +26,36 @@ function parseNumber(value) {
 }
 
 export default function App() {
-  const [vendedoresPorGrupo, setVendedoresPorGrupo] = useState(defaultGrupos);
+  // Recupera grupos e vendedores do localStorage ou usa padrão
+  const [vendedoresPorGrupo, setVendedoresPorGrupo] = useState(() => {
+    const raw = localStorage.getItem('vendedoresPorGrupo');
+    return raw ? JSON.parse(raw) : defaultGrupos;
+  });
 
   const allNames = Object.values(vendedoresPorGrupo).flat();
+
+  // Inicializa os valores dos vendedores do localStorage ou cria novo estado
   const initialState = allNames.reduce(
-    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '', qtd: '', operador: name } }),
+    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '', qtd: '', operador: name, anim: '' } }),
     {}
   );
 
   const [valores, setValores] = useState(() => {
-    try {
-      const raw = localStorage.getItem('vendasDia');
-      if (raw) {
+    const raw = localStorage.getItem('vendasDia');
+    if (raw) {
+      try {
         const parsed = JSON.parse(raw);
         return { ...initialState, ...parsed };
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
     return initialState;
   });
 
+  // Salva vendedoresPorGrupo e valores no localStorage sempre que mudam
   useEffect(() => {
     localStorage.setItem('vendasDia', JSON.stringify(valores));
-  }, [valores]);
+    localStorage.setItem('vendedoresPorGrupo', JSON.stringify(vendedoresPorGrupo));
+  }, [valores, vendedoresPorGrupo]);
 
   function handleChange(name, field, rawValue) {
     setValores(prev => ({ ...prev, [name]: { ...prev[name], [field]: rawValue } }));
@@ -69,27 +77,52 @@ export default function App() {
 
   function handleReset() {
     setValores(initialState);
+    setVendedoresPorGrupo(defaultGrupos);
     localStorage.removeItem('vendasDia');
+    localStorage.removeItem('vendedoresPorGrupo');
   }
 
-  function exportCSV() {
-    const header = ['Operador', 'Dia', 'Anual', 'Qtd Produtos', 'Total Mensalizado'];
+  function exportTXT() {
+    const header = ['Operador', 'Dia', 'Anual', 'Qtd', 'Total Mensalizado'];
     const rows = allNames.map(name => {
       const dia = parseNumber(valores[name].dia);
       const anual = parseNumber(valores[name].anual);
       const qtd = parseNumber(valores[name].qtd);
       const mensalizado = dia + (anual ? anual / 12 : 0);
-      return [valores[name].operador, dia.toFixed(2), anual.toFixed(2), qtd, mensalizado.toFixed(2)];
+      return [
+        valores[name].operador,
+        dia.toFixed(2),
+        anual.toFixed(2),
+        qtd,
+        mensalizado.toFixed(2)
+      ];
     });
-    const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+    const colWidths = header.map((_, i) =>
+      Math.max(header[i].length, ...rows.map(row => String(row[i]).length))
+    );
+
+    const formatRow = row =>
+      row.map((cell, i) => String(cell).padEnd(colWidths[i], ' ')).join(' | ');
+
+    const totalGeralFormatted = totalGeral.toFixed(2);
+
+    const txtContent = [
+      formatRow(header),
+      '-'.repeat(colWidths.reduce((a, b) => a + b + 3, -3)),
+      ...rows.map(formatRow),
+      '-'.repeat(colWidths.reduce((a, b) => a + b + 3, -3)),
+      formatRow(['TOTAL GERAL', '', '', '', totalGeralFormatted])
+    ].join('\n');
+
+    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vendas_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `vendas_${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    alert('✅ Resultados baixados! Confira o CSV.');
+    alert('✅ Resultados baixados! Confira o TXT.');
   }
 
   const addOperator = grupo => {
@@ -97,32 +130,51 @@ export default function App() {
     let count = 1;
     while (Object.keys(valores).includes(newName + (count > 1 ? ` ${count}` : ''))) count++;
     const finalName = newName + (count > 1 ? ` ${count}` : '');
-    
+
     setVendedoresPorGrupo(prev => ({
       ...prev,
       [grupo]: [...prev[grupo], finalName]
     }));
-    setValores(prev => ({ ...prev, [finalName]: { dia: '', anual: '', qtd: '', operador: 'Operador' } }));
+
+    setValores(prev => ({ 
+      ...prev, 
+      [finalName]: { dia: '', anual: '', qtd: '', operador: 'Operador', anim: 'new' } 
+    }));
+
+    setTimeout(() => {
+      setValores(prev => ({ 
+        ...prev, 
+        [finalName]: { ...prev[finalName], anim: '' } 
+      }));
+    }, 350);
   };
 
   const removeOperator = grupo => {
     const nomes = vendedoresPorGrupo[grupo];
     if (nomes.length === 0) return;
     const nameToRemove = nomes[nomes.length - 1];
-    setVendedoresPorGrupo(prev => ({
+
+    setValores(prev => ({
       ...prev,
-      [grupo]: prev[grupo].slice(0, -1)
+      [nameToRemove]: { ...prev[nameToRemove], anim: 'remove' }
     }));
-    setValores(prev => {
-      const copy = { ...prev };
-      delete copy[nameToRemove];
-      return copy;
-    });
+
+    setTimeout(() => {
+      setVendedoresPorGrupo(prev => ({
+        ...prev,
+        [grupo]: prev[grupo].slice(0, -1)
+      }));
+      setValores(prev => {
+        const copy = { ...prev };
+        delete copy[nameToRemove];
+        return copy;
+      });
+    }, 350);
   };
 
   return (
     <div className="app-container">
-      <h1>Calculadora de Vendas — Dia / Anual / Produtos</h1>
+      <h1>Calculadora de Vendas — Dia / Anual</h1>
 
       <div className="groups">
         {Object.entries(vendedoresPorGrupo).map(([grupo, nomes]) => {
@@ -136,7 +188,7 @@ export default function App() {
 
               <div className="group-body">
                 {nomes.map(nome => (
-                  <div key={nome} className="input-row">
+                  <div key={nome} className={`input-row ${valores[nome].anim || ''}`}>
                     <input
                       type="text"
                       placeholder="Operador"
@@ -159,7 +211,8 @@ export default function App() {
                     />
                     <input
                       type="number"
-                      placeholder="Qtd Produtos"
+                      placeholder="Qtd"
+                      className="qtd"
                       value={valores[nome].qtd}
                       onChange={e => handleChange(nome, 'qtd', e.target.value)}
                     />
@@ -189,7 +242,7 @@ export default function App() {
 
         <div className="actions">
           <button type="button" onClick={handleReset}>Zerar</button>
-          <button type="button" onClick={exportCSV}>Baixar resultados</button>
+          <button type="button" onClick={exportTXT}>Baixar resultados</button>
         </div>
       </div>
     </div>
