@@ -69,15 +69,18 @@ export default function App() {
 
   const totalGeral = Object.values(groupTotals).reduce((a, b) => a + b, 0);
 
+  // Zera apenas os valores da tabela, sem remover operadores
   function handleReset() {
-    setVendedoresPorGrupo({ ...defaultGrupos });
-    const initialValues = Object.values(defaultGrupos).flat().reduce((acc, name) => ({
-      ...acc,
-      [name]: { dia: '', anual: '', qtd: '', operador: name, anim: '' }
-    }), {});
-    setValores(initialValues);
-    localStorage.removeItem('vendasDia');
-    localStorage.removeItem('vendedoresPorGrupo');
+    setValores(prev => {
+      const reseted = Object.fromEntries(
+        Object.entries(prev).map(([name, data]) => [
+          name,
+          { ...data, dia: '', anual: '', qtd: '' }
+        ])
+      );
+      localStorage.setItem('vendasDia', JSON.stringify(reseted));
+      return reseted;
+    });
   }
 
   function exportTXT() {
