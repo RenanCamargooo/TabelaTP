@@ -3,7 +3,7 @@ import './App.scss';
 
 const defaultGrupos = {
   'TELEVENDAS HOST': ['Renan', 'Cleydiano', 'Osvaldo', 'Mayra'],
-  'WPP VENDAS P.D': ['Maria', 'Valéria', 'Andressa'],
+  'WPP VENDAS P.D': ['Maria', 'Valéria', 'Andressa', 'Leonardo'],
   'WPP VENDAS HOST': ['Victor', 'Hudson']
 };
 
@@ -26,32 +26,26 @@ function parseNumber(value) {
 }
 
 export default function App() {
-  // Recupera grupos e vendedores do localStorage ou usa padrão
   const [vendedoresPorGrupo, setVendedoresPorGrupo] = useState(() => {
     const raw = localStorage.getItem('vendedoresPorGrupo');
-    return raw ? JSON.parse(raw) : defaultGrupos;
+    if (raw) return JSON.parse(raw);
+    return { ...defaultGrupos };
   });
 
   const allNames = Object.values(vendedoresPorGrupo).flat();
 
-  // Inicializa os valores dos vendedores do localStorage ou cria novo estado
-  const initialState = allNames.reduce(
-    (acc, name) => ({ ...acc, [name]: { dia: '', anual: '', qtd: '', operador: name, anim: '' } }),
-    {}
-  );
-
   const [valores, setValores] = useState(() => {
     const raw = localStorage.getItem('vendasDia');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        return { ...initialState, ...parsed };
-      } catch (e) {}
-    }
-    return initialState;
+    const stored = raw ? JSON.parse(raw) : {};
+
+    const merged = allNames.reduce((acc, name) => {
+      acc[name] = stored[name] || { dia: '', anual: '', qtd: '', operador: name, anim: '' };
+      return acc;
+    }, {});
+
+    return merged;
   });
 
-  // Salva vendedoresPorGrupo e valores no localStorage sempre que mudam
   useEffect(() => {
     localStorage.setItem('vendasDia', JSON.stringify(valores));
     localStorage.setItem('vendedoresPorGrupo', JSON.stringify(vendedoresPorGrupo));
@@ -76,8 +70,12 @@ export default function App() {
   const totalGeral = Object.values(groupTotals).reduce((a, b) => a + b, 0);
 
   function handleReset() {
-    setValores(initialState);
-    setVendedoresPorGrupo(defaultGrupos);
+    setVendedoresPorGrupo({ ...defaultGrupos });
+    const initialValues = Object.values(defaultGrupos).flat().reduce((acc, name) => ({
+      ...acc,
+      [name]: { dia: '', anual: '', qtd: '', operador: name, anim: '' }
+    }), {});
+    setValores(initialValues);
     localStorage.removeItem('vendasDia');
     localStorage.removeItem('vendedoresPorGrupo');
   }
@@ -126,25 +124,28 @@ export default function App() {
   }
 
   const addOperator = grupo => {
-    const newName = `Operador`;
-    let count = 1;
-    while (Object.keys(valores).includes(newName + (count > 1 ? ` ${count}` : ''))) count++;
-    const finalName = newName + (count > 1 ? ` ${count}` : '');
+    // Gera uma chave única para o estado, mas o input exibirá sempre "Operador"
+    const uniqueKey = `operador_${Date.now()}`;
 
-    setVendedoresPorGrupo(prev => ({
-      ...prev,
-      [grupo]: [...prev[grupo], finalName]
-    }));
+    setVendedoresPorGrupo(prev => {
+      const updatedGrupo = { ...prev, [grupo]: [...prev[grupo], uniqueKey] };
+      localStorage.setItem('vendedoresPorGrupo', JSON.stringify(updatedGrupo));
+      return updatedGrupo;
+    });
 
-    setValores(prev => ({ 
-      ...prev, 
-      [finalName]: { dia: '', anual: '', qtd: '', operador: 'Operador', anim: 'new' } 
-    }));
+    setValores(prev => {
+      const updatedValores = {
+        ...prev,
+        [uniqueKey]: { dia: '', anual: '', qtd: '', operador: 'Operador', anim: 'new' }
+      };
+      localStorage.setItem('vendasDia', JSON.stringify(updatedValores));
+      return updatedValores;
+    });
 
     setTimeout(() => {
-      setValores(prev => ({ 
-        ...prev, 
-        [finalName]: { ...prev[finalName], anim: '' } 
+      setValores(prev => ({
+        ...prev,
+        [uniqueKey]: { ...prev[uniqueKey], anim: '' }
       }));
     }, 350);
   };
@@ -160,13 +161,15 @@ export default function App() {
     }));
 
     setTimeout(() => {
-      setVendedoresPorGrupo(prev => ({
-        ...prev,
-        [grupo]: prev[grupo].slice(0, -1)
-      }));
+      setVendedoresPorGrupo(prev => {
+        const updatedGrupo = { ...prev, [grupo]: prev[grupo].slice(0, -1) };
+        localStorage.setItem('vendedoresPorGrupo', JSON.stringify(updatedGrupo));
+        return updatedGrupo;
+      });
       setValores(prev => {
         const copy = { ...prev };
         delete copy[nameToRemove];
+        localStorage.setItem('vendasDia', JSON.stringify(copy));
         return copy;
       });
     }, 350);
@@ -188,32 +191,32 @@ export default function App() {
 
               <div className="group-body">
                 {nomes.map(nome => (
-                  <div key={nome} className={`input-row ${valores[nome].anim || ''}`}>
+                  <div key={nome} className={`input-row ${valores[nome]?.anim || ''}`}>
                     <input
                       type="text"
                       placeholder="Operador"
-                      value={valores[nome].operador}
+                      value={valores[nome]?.operador || 'Operador'}
                       onChange={e => handleChange(nome, 'operador', e.target.value)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
                       placeholder="Venda Mensal"
-                      value={valores[nome].dia}
+                      value={valores[nome]?.dia || ''}
                       onChange={e => handleChange(nome, 'dia', e.target.value)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
                       placeholder="Venda Anual"
-                      value={valores[nome].anual}
+                      value={valores[nome]?.anual || ''}
                       onChange={e => handleChange(nome, 'anual', e.target.value)}
                     />
                     <input
                       type="number"
                       placeholder="Qtd"
                       className="qtd"
-                      value={valores[nome].qtd}
+                      value={valores[nome]?.qtd || ''}
                       onChange={e => handleChange(nome, 'qtd', e.target.value)}
                     />
                   </div>
