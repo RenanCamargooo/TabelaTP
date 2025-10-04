@@ -3,12 +3,14 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+
+  /* Gradiente rosa claro para rosa escuro animado */
   background: linear-gradient(
     135deg,
-    rgba(106, 27, 154, 0.85),
-    rgba(171, 71, 188, 0.75),
-    rgba(243, 229, 245, 0.8),
-    rgba(255, 255, 255, 0.9)
+    rgba(255, 182, 193, 0.85),  /* rosa claro */
+    rgba(219, 112, 147, 0.85),  /* rosa médio */
+    rgba(199, 21, 133, 0.8),    /* rosa escuro */
+    rgba(255, 192, 203, 0.9)    /* volta ao rosa claro */
   );
   background-size: 400% 400%;
   animation: gradientMove 12s ease infinite;
